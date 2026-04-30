@@ -143,6 +143,10 @@ func (d *Daemon) Start() error {
 		mainLogger.Fatal("failed to remove memlock", zap.Error(err))
 	}
 
+	if err = d.TuneSysctls(); err != nil {
+		mainLogger.Fatal("failed to tune sysctls", zap.Error(err))
+	}
+
 	metrics.InitializeMetrics(slog.Default())
 
 	mainLogger.Info(zap.String("data aggregation level", daemonConfig.DataAggregationLevel.String()))

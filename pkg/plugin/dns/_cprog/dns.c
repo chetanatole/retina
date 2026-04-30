@@ -355,7 +355,7 @@ int retina_dns_filter(struct __sk_buff *skb) {
 	{
 		__u16 qoff = dns_off + sizeof(struct dnshdr);
 #pragma unroll
-		for (int i = 0; i < 64; i++) {
+		for (int i = 0; i < 20; i++) {
 			if (qoff >= skb->len)
 				goto send;
 			__u8 label_len;
