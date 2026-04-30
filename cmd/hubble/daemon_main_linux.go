@@ -35,6 +35,7 @@ import (
 	"github.com/microsoft/retina/pkg/managers/servermanager"
 	sharedconfig "github.com/microsoft/retina/pkg/shared/config"
 	"github.com/microsoft/retina/pkg/telemetry"
+	"github.com/microsoft/retina/pkg/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -203,6 +204,10 @@ func Execute(cobraCmd *cobra.Command, h *hive.Hive) {
 	// Allow the current process to lock memory for eBPF resources.
 	if err := rlimit.RemoveMemlock(); err != nil {
 		logging.Fatal(logger(), "failed to remove memlock", logfields.Error, err)
+	}
+
+	if err := utils.TuneSysctls(); err != nil {
+		logging.Fatal(logger(), "failed to tune sysctls", logfields.Error, err)
 	}
 
 	//nolint:gocritic // without granular commits this commented-out code may be lost

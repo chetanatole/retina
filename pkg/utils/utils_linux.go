@@ -6,6 +6,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"os"
+	"strconv"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -20,7 +22,37 @@ import (
 const (
 	ipv4ZeroSubnet = "0.0.0.0/0"
 	ipv6ZeroSubnet = "::/0"
+	optMemMaxPath  = "/proc/sys/net/core/optmem_max"
+	minOptMemMax   = 65536
 )
+
+// TuneSysctls increases some kernel limits to ensure Retina can run effectively.
+func TuneSysctls() error {
+	// Increase optmem_max if it's below our minimum requirement.
+	// This is necessary for some eBPF socket filter programs (like DNS)
+	// that can be large, especially on systems with restrictive defaults
+	// like GKE COS (default 20KB).
+	data, err := os.ReadFile(optMemMaxPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to read %s: %w", optMemMaxPath, err)
+	}
+
+	current, err := strconv.Atoi(strings.TrimSpace(string(data)))
+	if err != nil {
+		return fmt.Errorf("failed to parse %s: %w", optMemMaxPath, err)
+	}
+
+	if current < minOptMemMax {
+		if err := os.WriteFile(optMemMaxPath, []byte(strconv.Itoa(minOptMemMax)), 0o600); err != nil {
+			return fmt.Errorf("failed to write %s: %w", optMemMaxPath, err)
+		}
+	}
+
+	return nil
+}
 
 // Both openRawSock and htons are available in
 // https://github.com/cilium/ebpf/blob/master/example_sock_elf_test.go.
