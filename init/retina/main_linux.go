@@ -15,6 +15,7 @@ import (
 	"github.com/microsoft/retina/pkg/loader"
 	"github.com/microsoft/retina/pkg/log"
 	"github.com/microsoft/retina/pkg/telemetry"
+	"github.com/microsoft/retina/pkg/utils"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -63,6 +64,12 @@ func run(args ...string) error {
 	err = bpf.Setup(l, cfg.FilterMapMaxEntries)
 	if err != nil {
 		return errors.Wrap(err, "failed to setup Retina bpf filesystem")
+	}
+
+	// Tune sysctls
+	if err := utils.TuneSysctls(); err != nil {
+		l.Error("failed to tune sysctls", zap.Error(err))
+		return errors.Wrap(err, "failed to tune sysctls")
 	}
 
 	runtimeHeaderDir, headerErr := loader.PrepareVmlinuxH(context.Background())
